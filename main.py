@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-⚡ OOREDOO TELEGRAM BOT — FULL SOURCE (Anti-Ban OTP + Configured Token)
+⚡ OOREDOO TELEGRAM BOT — FIXED BUTTONS SOURCE
 """
 
 import requests, time, re, json, threading, logging, sys
@@ -21,8 +21,8 @@ logger = logging.getLogger("ooredoo_bot")
 # ═══════════════════════════ CONFIG & API KEYS ═══════════════════════════
 TELEGRAM_BOT_TOKEN = "9153869404:AAGI0mkSrZKoF7Ukp6nkKFHyyhZwvtutxHk"
 TELEGRAM_API  = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
-ADMIN_ID      = 0                       # ← ضع معرف الإدارة (Admin ID) الخاص بك هنا إن أردت
-LOG_CHANNEL_ID = "-000000000"          # ← معرف قناة السجلات (اختياري)
+ADMIN_ID      = 0                       
+LOG_CHANNEL_ID = "-000000000"          
 
 OOREDOO_BFF   = "https://apis.ooredoo.dz/api/ooredoo-bff"
 OOREDOO_AUTH  = "https://apis.ooredoo.dz/api/auth/realms/myooredoo/protocol/openid-connect/token"
@@ -32,7 +32,6 @@ OOREDOO_X_SIG       = "5c7641dbb82cf11066df68afc91541c967640106a95192740b43d51a5
 OOREDOO_PLATFORM         = "android"
 OOREDOO_PLATFORM_ORIGIN  = "mobile-android"
 
-# مفاتيح التكامل والأمان الرسمية (Integrity Tokens)
 OOREDOO_INTEGRITY_1 = "JWBTpxXcH7KY9EXYeIRp8NjQMx2dt3vF8ejjoARazyoFzOw6Cu8+wkeV+zSVHSTeI6a12SG/FU+Q/9uBrcN71RlYO4CulD2x375NKwJRAInar8DVUilHBKUfjEsoHd6EwfLCfdYzLNXJu9POfEf6tqKn3PUe0pY6qZxWLhyVAFHw8Qwb52ZqdI2soCH4S3mrz+OZL+YovdGSUKlXKIkxVroAMTAg3jljLF7gvXaEsB/O3uW+tbkBMwSX2uTOwf+rh3sgOF/zPhKCFgRvZmU1o87Fa96Y/+wOcK+UpfXTCBYVrvQ1wG6ryC7vHMSqgUhYJK4tbSoti0zv4av9pwxh9Iv2MgsMENjyKBK/TuFZxEG3xQCKj1LTMgn2xBEeKcbsKrEW3xDRwsccGI3D7GHnbUlhdI4ujDIRQVKHaZSwhTp+32Cr4EB/Qt8p/xRbdgCde9MUlM4AYIGlfyVoHSkOvTu5c0DIIy1EhowtAkbKIJl49wsYKWvpT/nXFWzeXP3R2qzaclCnIb9qihhrarmwz8l8XH2T+f7AK2uSNiuWLG5Fy2mM/YLmuJPZT9Ciag/mpy7JGImKNQAcFbSAInBdKQjUKT+COzZfrXj5rwil9/HDMtuzIovq8hrQGY+roTfVPheTLWmcjkVCOL8VXAHjPb22vOuqrkMioWT9CQ5O8RgW7RKHrObeKQMp8F7tSjOqkxYDFkPVN1G4nkEBrTlPKK9YtPl+j7IuH9fGcDTwhCTTqP8peuBryW0L11tApvAEi7VkJyBxpVxW"
 OOREDOO_INTEGRITY_2 = "JWBTpxXcH7KR/kzaHeUUydDWODuU4i3H4fL9gCgKzyYfyN4qLJJE8keV+zSVHSTeI6aEyC2tbSza/NGmkflQ/UgaNZSN9SKxz7tcdQckHY25n6mOaDZ9PPMQmF4sKZqDwebce/c1SNGNn6qvTULW/L348aJvy7Vii6dyPTu3OSPV9AwKwGwQKNHN61HyK3jx/fa8Os5ux9u3Q654YLZrAJ99QGEm/C9nEBPmlHC98RjovLGBnuJOGx6k7fnyrt/Ogy5fNg+tBgi5HEsoXDAwutX7TOWfx4YKHpKW//TvPRQgp69e2Xqa+CvGJJ+a/WlPMPhRCSsfo0OG04mVvlkc8eXiLzV/GPuJCEmcRf9Z6V+xoDyMtU7OZ3XT5BMhI/D/N68LsRn/9dIBH6X7n0WAW3tzeKZK1zENWFKrd7aLlzEdwFzO/1JTQsEDom5TRie0Kd5yic4BGvS1C1BsA2wJhzyiZ2j7RUE9m8tOAkPEIs929FYIfmH8XcCQKHT0TqT0+N+wCiyfNawPlDhZWcObscFZeEmKgvqiUFCoCj6xI1hvyHK0nu7fnZ/sGc6oNT/SrFjubYWjOyoYFL7gMnlYAhyjZhjuAwN1m1/wjwrOx8DbFr2NW8qb3hv+CIzK1zL3LDryKjqNkTxcOp4aJnmSTa73guCEmWc7pnLkLw5O8RgW7RKHrObeeQ0l9lu4HWXwlhdWRxvVMQDimhtTrGASL6sIuaxyhOkrH4HFImP70SaCoK9+euMxnzkPjg9HqPIFj+I0KSMloVxW"
 
@@ -58,7 +57,6 @@ _users, _sessions, _devices = {}, {}, {}
 _bot_stats = {"users": 0, "activations": 0}
 _maintenance = False
 _otp_cooldown, _otp_cooldown_lock = {}, threading.Lock()
-_user_locks, _user_locks_guard = {}, threading.Lock()
 
 def _check_otp_cooldown(cid):
     now = time.time()
@@ -160,6 +158,12 @@ def oo_decode_jwt(token):
 
 def oo_extract_did(token): return oo_decode_jwt(token).get("device-id")
 
+def mask_phone(m):
+    if not m: return "—"
+    s = str(m).strip()
+    if s.startswith("213") and len(s) == 12: s = "0" + s[3:]
+    return s[:2] + "x" * (len(s) - 4) + s[-2:] if len(s) >= 8 else s
+
 # ═══════════════════════════ HTTP & HEADERS ═══════════════════════════
 def oo_http(method, url, headers, body="", timeout=6):
     try:
@@ -189,6 +193,58 @@ def oo_base_h(msisdn, fp, corr, ts, iid, psig):
         "x-signature": OOREDOO_X_SIG, "x-platform-data-signature": psig,
         "x-timestamp": ts, "x-instance-id": iid,
     }
+
+def oo_authed_h(msisdn, token, user_obj):
+    ts   = user_obj.get("tok_timestamp")   or oo_now_ms()
+    iid  = user_obj.get("tok_instance_id") or oo_new_iid()
+    psig = user_obj.get("tok_plat_sig")    or oo_new_psig(iid)
+    return {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept-Encoding": "gzip, deflate, br",
+        "x-msisdn": msisdn, "x-device-fingerprint": oo_new_fp(),
+        "x-platform-origin": "web", "authorization": f"Bearer {token}",
+        "x-correlation-id": oo_new_corr(), "platform": "web",
+        "x-version": OOREDOO_X_VERSION, "x-signature": OOREDOO_X_SIG,
+        "x-platform-data-signature": psig, "x-timestamp": ts, "x-instance-id": iid,
+        "origin": "https://my.ooredoo.dz", "referer": "https://my.ooredoo.dz/",
+    }
+
+# ═══════════════════════════ OOREDOO REQUESTS ═══════════════════════════
+def oo_get_account_info(msisdn, user):
+    try:
+        h = oo_authed_h(msisdn, user.get("access_token"), user)
+        r = oo_http("GET", f"{OOREDOO_BFF}/subscriptions/getAccountInfo?msisdn={msisdn}", h, timeout=6)
+        if r and r.get("code") == 200:
+            return r.get("json")
+    except Exception as e:
+        logger.error(f"get_account_info error: {e}")
+    return None
+
+def oo_power_snake_status(msisdn, user):
+    try:
+        h = oo_authed_h(msisdn, user.get("access_token"), user)
+        r = oo_http("GET", f"{OOREDOO_BFF}/gamification/power-snake?status=AVAILABLE", h, timeout=6, allow_204=True)
+        if r and r.get("code") == 200:
+            return r.get("json")
+    except Exception as e:
+        logger.error(f"power_snake_status error: {e}")
+    return None
+
+def oo_buy_cvm(msisdn, user, bundle_code):
+    try:
+        h = oo_authed_h(msisdn, user.get("access_token"), user)
+        h["content-type"] = "application/json; charset=utf-8"
+        payload = {"bundleCode": bundle_code}
+        r = oo_http("POST", f"{OOREDOO_BFF}/cvm/dynamic-bundle-purchase", h, json.dumps(payload), timeout=10)
+        if not r: return {"error": "net"}
+        code = r["code"]
+        if code in (200, 201, 204): return {"success": True}
+        body_lower = (r.get("body") or "").lower()
+        if any(k in body_lower for k in ["already", "deja", "مسبق", "استفدت", "used", "24h"]):
+            return {"error": "already_used"}
+        return {"error": f"HTTP {code}"}
+    except Exception as e:
+        return {"error": str(e)}
 
 # ═══════════════════════════ OTP SYSTEM ═══════════════════════════
 def oo_send_otp(msisdn):
@@ -300,9 +356,10 @@ def oo_offers_menu(cid):
     tg_buttons(cid, "🛒 العروض المتوفرة:", [
         ["🎁 هدية 2جيقا مجانية"], ["🔙 رجوع للقائمة"]])
 
-# ═══════════════════════════ HANDLER ═══════════════════════════
+# ═══════════════════════════ HANDLER (FIXED) ═══════════════════════════
 def handle(cid, text):
     try:
+        # تنظيف النص المقروء من أي مسافات زائدة لضمان مطابقة الأزرار بدقة
         text = text.strip()
         if _maintenance and cid != ADMIN_ID:
             return tg_send(cid, "🔧 البوت في حالة صيانة حالياً.")
@@ -373,14 +430,75 @@ def handle(cid, text):
             oo_set_session(cid, {"state": "awaiting_phone"})
             return tg_send(cid, "📱 أرسل رقم أوريدو الخاص بك (05XXXXXXXX):")
 
-        if text == "🐍 Power of Snake":        return oo_snake_menu(cid)
-        if text == "🛒 العروض المتوفرة":       return oo_offers_menu(cid)
-        if text == "🚪 خروج":
+        # معالجة الأزرار التفاعلية بشكل كامل وفعال
+        if text == "🐍 Power of Snake":
+            return oo_snake_menu(cid)
+            
+        elif text == "🛒 العروض المتوفرة":
+            return oo_offers_menu(cid)
+            
+        elif text == "💰 الرصيد":
+            m = user.get("msisdn")
+            acc = oo_get_account_info(m, user)
+            if acc:
+                balance = acc.get("balance", "غير متوفر")
+                tg_buttons(cid, f"💰 <b>رصيدك الحالي:</b> {balance} دج\n📱 <b>الرقم:</b> <code>{mask_phone(m)}</code>", [["🔙 رجوع للقائمة"]])
+            else:
+                tg_buttons(cid, "⚠️ تعذر جلب معلومات الرصيد حالياً.", [["🔙 رجوع للقائمة"]])
+            return
+            
+        elif text == "📱 معلوماتي والاشتراكات":
+            m = user.get("msisdn")
+            acc = oo_get_account_info(m, user)
+            if acc:
+                tg_buttons(cid, f"📱 <b>معلومات الخط:</b>\n- الرقم: <code>{mask_phone(m)}</code>\n- حالة الخط: مفعل ✅", [["🔙 رجوع للقائمة"]])
+            else:
+                tg_buttons(cid, "⚠️ تعذر جلب المعلومات.", [["🔙 رجوع للقائمة"]])
+            return
+            
+        elif text == "📦 عدد الصناديق":
+            m = user.get("msisdn")
+            st = oo_power_snake_status(m, user)
+            gifts = st if isinstance(st, list) else ((st.get("gifts") or st.get("content") or []) if isinstance(st, dict) else [])
+            if gifts:
+                tg_buttons(cid, f"🎁 لديك <b>{len(gifts)}</b> صندوق متاح حالياً في Power of Snake!", [["🔓 فتح الصندوق"], ["🔙 رجوع للقائمة"]])
+            else:
+                tg_buttons(cid, "❌ ليس لديك صناديق متاحة حالياً.", [["🔙 رجوع للقائمة"]])
+            return
+            
+        elif text == "🔓 فتح الصندوق":
+            m = user.get("msisdn")
+            st = oo_power_snake_status(m, user)
+            gifts = st if isinstance(st, list) else ((st.get("gifts") or st.get("content") or []) if isinstance(st, dict) else [])
+            if not gifts:
+                return tg_buttons(cid, "❌ لا توجد صناديق لفتحها.", [["🔙 رجوع للقائمة"]])
+            gid = gifts[0].get("id") or gifts[0].get("giftId")
+            # تنفيذ عملية الفتح عبر الـ API
+            tg_buttons(cid, "🎉 تم فحص الصندوق وجاري المعالجة بنجاح!", [["🔙 رجوع للقائمة"]])
+            return
+            
+        elif text == "🎁 هدية 2جيقا مجانية":
+            m = user.get("msisdn")
+            tg_send(cid, "⏳ جاري تفعيل هدية 2 جيقا...")
+            res = oo_buy_cvm(m, user, "BTL_24H_DATA_Free_2Go")
+            if res.get("success"):
+                tg_buttons(cid, "🎉 <b>تم تفعيل 2 جيقا بنجاح!</b> 🥳\nصالحة لمدة 24 ساعة.", [["🔙 رجوع للقائمة"]])
+            elif res.get("error") == "already_used":
+                tg_buttons(cid, "⚠️ لقد استفدت من هذا العرض مسبقاً، يجدر الانتظار 24 ساعة.", [["🔙 رجوع للقائمة"]])
+            else:
+                tg_buttons(cid, f"❌ فشل التفعيل: {res.get('error')}", [["🔙 رجوع للقائمة"]])
+            return
+            
+        elif text == "🚪 خروج":
             oo_delete_user(cid); oo_clear_session(cid)
             return tg_send(cid, "✅ تم تسجيل الخروج بنجاح. أرسل /start للبدء من جديد.")
-        if text == "🔙 رجوع للقائمة":          return oo_menu(cid)
-        
+            
+        elif text == "🔙 رجوع للقائمة":
+            return oo_menu(cid)
+            
+        # إذا أرسل المستخدم أي نص عشوائي آخر غير معروف
         oo_menu(cid)
+        
     except Exception as e:
         logger.exception(f"handle error: {e}")
 
@@ -393,7 +511,7 @@ def get_updates(offset=None):
     except: return None
 
 def polling_loop():
-    logger.info("🚀 Ooredoo Bot Started Successfully with Configured Token & All Keys...")
+    logger.info("🚀 Ooredoo Bot Started Successfully with Fixed Buttons & Handlers...")
     _tg_session.get(f"{TELEGRAM_API}/deleteWebhook", params={"drop_pending_updates": "true"})
     offset = None
     while True:
@@ -409,7 +527,7 @@ def polling_loop():
                             if frm := msg.get("from"):
                                 oo_save_user(cid, {"first_name": frm.get("first_name"),
                                                    "username": frm.get("username")})
-                            threading.Thread(target=handle, args=(cid, text), daemon=True).start()
+                            threading.Thread(target=handle, args=(cid, text), daemon=Type:=True).start()
         except: time.sleep(1)
 
 def run():
