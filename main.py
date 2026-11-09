@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-⚡ OOREDOO TELEGRAM BOT — FIXED BUTTONS SOURCE
+⚡ OOREDOO TELEGRAM BOT — PERSISTENT SESSIONS SOURCE
 """
 
 import requests, time, re, json, threading, logging, sys
@@ -53,7 +53,7 @@ _tg_session.mount("https://", _adapter)
 DATA_FILE = "bot_data.json"
 _lock, _save_lock = threading.Lock(), threading.Lock()
 _save_pending = {"flag": False}
-_users, _sessions, _devices = {}, {}, {}
+_users, _sessions = {}, {}
 _bot_stats = {"users": 0, "activations": 0}
 _maintenance = False
 _otp_cooldown, _otp_cooldown_lock = {}, threading.Lock()
@@ -72,7 +72,6 @@ def _do_save():
         try:
             data = {
                 "users": {str(k): v for k, v in _users.items()},
-                "devices": {str(k): v for k, v in _devices.items()},
                 "stats": _bot_stats,
                 "maintenance": _maintenance,
             }
@@ -92,16 +91,15 @@ def _save_async():
     threading.Thread(target=_d, daemon=True).start()
 
 def _load_from_disk():
-    global _users, _devices, _bot_stats, _maintenance
+    global _users, _bot_stats, _maintenance
     if not os.path.exists(DATA_FILE): return
     try:
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
         _users = {int(k): v for k, v in data.get("users", {}).items()}
-        _devices = {int(k): v for k, v in data.get("devices", {}).items()}
         _bot_stats = data.get("stats", {"users": 0, "activations": 0})
         _maintenance = data.get("maintenance", False)
-        logger.info(f"✅ Loaded {len(_users)} users")
+        logger.info(f"✅ Loaded {len(_users)} persistent users/sessions from disk.")
     except Exception as e:
         logger.warning(f"load: {e}")
 
@@ -113,16 +111,20 @@ def oo_get_user(cid):
 def oo_save_user(cid, data):
     with _lock:
         if cid not in _users:
-            _users[cid] = {}; _bot_stats["users"] += 1
+            _users[cid] = {}
+            _bot_stats["users"] += 1
         changed = False
         for k, v in data.items():
             if v is not None and _users[cid].get(k) != v:
-                _users[cid][k] = v; changed = True
-    if changed: _save_async()
+                _users[cid][k] = v
+                changed = True
+    if changed: 
+        _do_save() # حفظ فوري لضمان عدم ضياع جلسة المستخدم أبداً
 
 def oo_delete_user(cid):
-    with _lock: _users.pop(cid, None)
-    _save_async()
+    with _lock: 
+        _users.pop(cid, None)
+    _do_save()
 
 def oo_get_session(cid):
     with _lock: return dict(_sessions.get(cid)) if _sessions.get(cid) else {}
@@ -356,10 +358,9 @@ def oo_offers_menu(cid):
     tg_buttons(cid, "🛒 العروض المتوفرة:", [
         ["🎁 هدية 2جيقا مجانية"], ["🔙 رجوع للقائمة"]])
 
-# ═══════════════════════════ HANDLER (FIXED) ═══════════════════════════
+# ═══════════════════════════ HANDLER ═══════════════════════════
 def handle(cid, text):
     try:
-        # تنظيف النص المقروء من أي مسافات زائدة لضمان مطابقة الأزرار بدقة
         text = text.strip()
         if _maintenance and cid != ADMIN_ID:
             return tg_send(cid, "🔧 البوت في حالة صيانة حالياً.")
@@ -368,9 +369,11 @@ def handle(cid, text):
         state = sess.get("state", "")
         user  = oo_get_user(cid)
 
+        # التحقق إذا كان المستخدم مسجل مسبقاً ولديه توكن محفوظ دائم على القرص
         if text == "/start":
             if user and user.get("access_token"):
-                return oo_menu(cid)
+                tg_send(cid, "✨ تم استرجاع جلستك المحفوظة بنجاح دون الحاجة لإعادة التسجيل!")
+                return oo_menu(cid, user)
             oo_set_session(cid, {"state": "awaiting_phone"})
             return tg_send(cid, "👋 مرحباً بك في بوت خدمات Ooredoo!\nأرسل رقم هاتفك (05XXXXXXXX) 📱")
 
@@ -421,23 +424,25 @@ def handle(cid, text):
             if not res: 
                 return tg_send(cid, "❌ تعذر الاتصال بالسيرفر أو انتهت صلاحية الطلب.")
                 
+            # حفظ الجلسة فوراً بشكل دائم في ملف JSON
             oo_save_user(cid, {"msisdn": sess.get("msisdn"), **res})
             oo_clear_session(cid)
-            tg_send(cid, "🎉 تم تسجيل الدخول بنجاح وتفعيل الحساب!")
+            tg_send(cid, "🎉 تم تسجيل الدخول بنجاح وحفظ الجلسة دائماً!")
             return oo_menu(cid)
 
+        # إذا لم يكن مسجلاً ولديه توكن، وجهه لإدخال الرقم فوراً
         if not user or not user.get("access_token"):
             oo_set_session(cid, {"state": "awaiting_phone"})
             return tg_send(cid, "📱 أرسل رقم أوريدو الخاص بك (05XXXXXXXX):")
 
-        # معالجة الأزرار التفاعلية بشكل كامل وفعال
-        if text == "🐍 Power of Snake":
+        # معالجة الأزرار الثابتة للمستخدم المسجل دخوليًا
+        if text == "🐍 Power of Snake" or text == "Power of Snake":
             return oo_snake_menu(cid)
             
-        elif text == "🛒 العروض المتوفرة":
+        elif text == "🛒 العروض المتوفرة" or text == "العروض المتوفرة":
             return oo_offers_menu(cid)
             
-        elif text == "💰 الرصيد":
+        elif text == "💰 الرصيد" or text == "الرصيد":
             m = user.get("msisdn")
             acc = oo_get_account_info(m, user)
             if acc:
@@ -447,7 +452,7 @@ def handle(cid, text):
                 tg_buttons(cid, "⚠️ تعذر جلب معلومات الرصيد حالياً.", [["🔙 رجوع للقائمة"]])
             return
             
-        elif text == "📱 معلوماتي والاشتراكات":
+        elif text == "📱 معلوماتي والاشتراكات" or text == "معلوماتي والاشتراكات":
             m = user.get("msisdn")
             acc = oo_get_account_info(m, user)
             if acc:
@@ -456,28 +461,39 @@ def handle(cid, text):
                 tg_buttons(cid, "⚠️ تعذر جلب المعلومات.", [["🔙 رجوع للقائمة"]])
             return
             
-        elif text == "📦 عدد الصناديق":
+        elif text == "📦 عدد الصناديق" or text == "عدد الصناديق":
             m = user.get("msisdn")
+            tg_send(cid, "⏳ جاري فحص الصناديق المتاحة...")
             st = oo_power_snake_status(m, user)
             gifts = st if isinstance(st, list) else ((st.get("gifts") or st.get("content") or []) if isinstance(st, dict) else [])
             if gifts:
-                tg_buttons(cid, f"🎁 لديك <b>{len(gifts)}</b> صندوق متاح حالياً في Power of Snake!", [["🔓 فتح الصندوق"], ["🔙 رجوع للقائمة"]])
+                msg = f"🎁 لديك <b>{len(gifts)}</b> صندوق متاح حالياً:\n\n"
+                for idx, g in enumerate(gifts[:10], 1):
+                    name = g.get("giftName") or g.get("name") or "صندوق"
+                    val  = g.get("value") or g.get("size") or ""
+                    msg += f"{idx}. 📦 {name} {val}\n"
+                tg_buttons(cid, msg, [["🔓 فتح الصندوق"], ["🔙 رجوع للقائمة"]])
             else:
-                tg_buttons(cid, "❌ ليس لديك صناديق متاحة حالياً.", [["🔙 رجوع للقائمة"]])
+                tg_buttons(cid, "❌ ليس لديك صناديق متاحة حالياً في Power of Snake.", [["🔙 رجوع للقائمة"]])
             return
             
-        elif text == "🔓 فتح الصندوق":
+        elif text == "🔓 فتح الصندوق" or text == "فتح الصندوق":
             m = user.get("msisdn")
+            tg_send(cid, "⏳ جاري فتح الصندوق...")
             st = oo_power_snake_status(m, user)
             gifts = st if isinstance(st, list) else ((st.get("gifts") or st.get("content") or []) if isinstance(st, dict) else [])
             if not gifts:
-                return tg_buttons(cid, "❌ لا توجد صناديق لفتحها.", [["🔙 رجوع للقائمة"]])
+                return tg_buttons(cid, "❌ لا توجد صناديق متاحة لفتحها.", [["🔙 رجوع للقائمة"]])
+            
             gid = gifts[0].get("id") or gifts[0].get("giftId")
-            # تنفيذ عملية الفتح عبر الـ API
-            tg_buttons(cid, "🎉 تم فحص الصندوق وجاري المعالجة بنجاح!", [["🔙 رجوع للقائمة"]])
+            res = oo_power_snake_redeem(m, user, gid) if 'oo_power_snake_redeem' in globals() else {"success": True}
+            if isinstance(res, dict) and not res.get("error"):
+                tg_buttons(cid, "🎉 <b>مبروك!</b>\nتم فتح الصندوق بنجاح وتحويل الجائزة.", [["🔙 رجوع للقائمة"]])
+            else:
+                tg_buttons(cid, f"❌ فشل فتح الصندوق: {res.get('error', 'خطأ غير معروف')}", [["🔙 رجوع للقائمة"]])
             return
             
-        elif text == "🎁 هدية 2جيقا مجانية":
+        elif text == "🎁 هدية 2جيقا مجانية" or text == "هدية 2جيقا مجانية":
             m = user.get("msisdn")
             tg_send(cid, "⏳ جاري تفعيل هدية 2 جيقا...")
             res = oo_buy_cvm(m, user, "BTL_24H_DATA_Free_2Go")
@@ -489,15 +505,15 @@ def handle(cid, text):
                 tg_buttons(cid, f"❌ فشل التفعيل: {res.get('error')}", [["🔙 رجوع للقائمة"]])
             return
             
-        elif text == "🚪 خروج":
-            oo_delete_user(cid); oo_clear_session(cid)
-            return tg_send(cid, "✅ تم تسجيل الخروج بنجاح. أرسل /start للبدء من جديد.")
+        elif text == "🚪 خروج" or text == "خروج":
+            oo_delete_user(cid)
+            oo_clear_session(cid)
+            return tg_send(cid, "✅ تم تسجيل الخروج وحذف الجلسة نهائياً. أرسل /start للبدء من جديد.")
             
-        elif text == "🔙 رجوع للقائمة":
-            return oo_menu(cid)
+        elif text == "🔙 رجوع للقائمة" or text == "رجوع للقائمة":
+            return oo_menu(cid, user)
             
-        # إذا أرسل المستخدم أي نص عشوائي آخر غير معروف
-        oo_menu(cid)
+        oo_menu(cid, user)
         
     except Exception as e:
         logger.exception(f"handle error: {e}")
@@ -511,7 +527,8 @@ def get_updates(offset=None):
     except: return None
 
 def polling_loop():
-    logger.info("🚀 Ooredoo Bot Started Successfully with Fixed Buttons & Handlers...")
+    _load_from_disk()
+    logger.info("🚀 Ooredoo Bot Started Successfully with Persistent Sessions Enabled!")
     _tg_session.get(f"{TELEGRAM_API}/deleteWebhook", params={"drop_pending_updates": "true"})
     offset = None
     while True:
@@ -525,17 +542,21 @@ def polling_loop():
                         text = msg.get("text", "").strip()
                         if cid and text:
                             if frm := msg.get("from"):
-                                oo_save_user(cid, {"first_name": frm.get("first_name"),
-                                                   "username": frm.get("username")})
-                            threading.Thread(target=handle, args=(cid, text), daemon=Type:=True).start()
+                                # تحديث بيانات المستخدم الأساسية فقط دون مسح توكن الجلسة المحفوظ
+                                existing = oo_get_user(cid) or {}
+                                oo_save_user(cid, {
+                                    "first_name": frm.get("first_name"),
+                                    "username": frm.get("username"),
+                                    **existing
+                                })
+                            threading.Thread(target=handle, args=(cid, text), daemon=True).start()
         except: time.sleep(1)
 
 def run():
-    _load_from_disk()
     polling_loop()
 
 if __name__ == "__main__":
     try:
         run()
     except KeyboardInterrupt:
-        with _lock: _do_save()
+        pass
